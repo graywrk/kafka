@@ -1,0 +1,28 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if Clickhouse service is running
+      command: systemctl status clickhouse-server
+      register: clickhouse_status
+      changed_when: false
+      failed_when: clickhouse_status.rc != 0
+
+    - name: Verify Clickhouse HTTP port is listening
+      wait_for:
+        port: 8123
+        timeout: 10
+        state: started
+
+    - name: Verify Clickhouse TCP port is listening
+      wait_for:
+        port: 9000
+        timeout: 10
+        state: started
+
+    - name: Test Clickhouse connection
+      command: clickhouse-client --host localhost --port 9000 --user default --password clickhouse --query "SELECT 1"
+      register: clickhouse_test
+      changed_when: false
+      failed_when: clickhouse_test.rc != 0 

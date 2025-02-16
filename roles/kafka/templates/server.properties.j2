@@ -1,0 +1,37 @@
+# Идентификатор брокера
+broker.id={{ kafka_broker_id }}
+
+# Директории для данных и логов
+log.dirs={{ kafka_data_dir }}
+
+# Настройки подключения
+listeners={{ kafka_listeners }}
+advertised.listeners={{ kafka_advertised_listeners }}
+listener.security.protocol.map={{ kafka_listener_security_protocol_map }}
+inter.broker.listener.name={{ kafka_inter_broker_listener_name }}
+
+# Подключение к ZooKeeper
+zookeeper.connect={{ zookeeper_connect }}
+
+# Базовые настройки
+num.network.threads=3
+num.io.threads=8
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+
+# Настройки размера партиции
+num.partitions=3
+default.replication.factor=2
+min.insync.replicas=2
+num.recovery.threads.per.data.dir=1
+
+# Настройки репликации
+offsets.topic.replication.factor=3
+transaction.state.log.replication.factor=3
+transaction.state.log.min.isr=2
+
+# Настройки удержания данных
+log.retention.hours=168
+log.segment.bytes=1073741824
+log.retention.check.interval.ms=300000 

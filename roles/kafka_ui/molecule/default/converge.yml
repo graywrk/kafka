@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: Include kafka_ui role
+      include_role:
+        name: kafka_ui 

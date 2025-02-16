@@ -1,0 +1,22 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if Docker is running
+      command: systemctl status docker
+      register: docker_status
+      changed_when: false
+      failed_when: docker_status.rc != 0
+
+    - name: Check if Kafka UI container is running
+      command: docker ps -f name=kafka-ui
+      register: container_status
+      changed_when: false
+      failed_when: container_status.rc != 0
+
+    - name: Verify Kafka UI port is listening
+      wait_for:
+        port: 8080
+        timeout: 10
+        state: started 

@@ -1,0 +1,37 @@
+- name: Install Docker dependencies
+  apt:
+    name: 
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+    state: present
+    update_cache: yes
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Install Docker
+  apt:
+    name: docker-ce
+    state: present
+    update_cache: yes
+
+- name: Run Kafka UI container
+  docker_container:
+    name: "{{ kafka_ui_container_name }}"
+    image: "provectuslabs/kafka-ui:{{ kafka_ui_version }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ kafka_ui_port }}:8080"
+    env:
+      KAFKA_CLUSTERS_0_NAME: "{{ kafka_clusters[0].name }}"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "{{ kafka_clusters[0].bootstrapServers }}" 

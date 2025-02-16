@@ -1,0 +1,17 @@
+# Базовая директория для ZooKeeper
+dataDir={{ kafka_data_dir }}/zookeeper
+# Порт для клиентских подключений
+clientPort=2181
+# Порт для подключения к лидеру
+clientPortAddress={{ ansible_host }}
+# Тайм-аут в миллисекундах
+tickTime=2000
+# Тайм-аут для инициализации
+initLimit=10
+# Тайм-аут для синхронизации с лидером
+syncLimit=5
+
+# Настройки кластера ZooKeeper
+{% for host in groups['kafka'] %}
+server.{{ groups['kafka'].index(host) + 1 }}={{ hostvars[host]['ansible_host'] }}:2888:3888
+{% endfor %} 

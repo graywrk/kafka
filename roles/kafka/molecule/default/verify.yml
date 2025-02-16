@@ -1,0 +1,28 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if Kafka service is running
+      command: systemctl status kafka
+      register: kafka_status
+      changed_when: false
+      failed_when: kafka_status.rc != 0
+
+    - name: Check if ZooKeeper service is running
+      command: systemctl status zookeeper
+      register: zookeeper_status
+      changed_when: false
+      failed_when: zookeeper_status.rc != 0
+
+    - name: Verify Kafka port is listening
+      wait_for:
+        port: 9092
+        timeout: 10
+        state: started
+
+    - name: Verify ZooKeeper port is listening
+      wait_for:
+        port: 2181
+        timeout: 10
+        state: started 

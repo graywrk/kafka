@@ -1,0 +1,20 @@
+---
+# Версия ClickHouse
+clickhouse_version: "latest"
+clickhouse_packages:
+  - clickhouse-client
+  - clickhouse-server
+  - clickhouse-common-static
+
+# Настройки пользователя
+clickhouse_user: "clickhouse"
+clickhouse_group: "clickhouse"
+
+# Директории
+clickhouse_data_dir: "/var/lib/clickhouse"
+clickhouse_log_dir: "/var/log/clickhouse-server"
+
+# Сетевые настройки
+clickhouse_http_port: 8123
+clickhouse_tcp_port: 9000
+clickhouse_host: "0.0.0.0" 

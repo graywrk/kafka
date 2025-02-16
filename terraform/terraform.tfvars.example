@@ -1,0 +1,33 @@
+cloud_id      = "your_cloud_id"
+folder_id     = "your_folder_id"
+zone          = "ru-central1-a"
+public_key_path = "~/.ssh/id_rsa.pub"
+
+# Ресурсы для разных типов серверов
+kafka_resources = {
+  cores         = 2
+  memory       = 4
+  core_fraction = 20
+}
+
+db_resources = {
+  cores         = 2
+  memory       = 4
+  core_fraction = 20
+}
+
+web_resources = {
+  cores         = 2
+  memory       = 2
+  core_fraction = 20
+}
+
+# Размеры дисков для серверов (в GB)
+disk_sizes = {
+  kafka = 15
+  db    = 20
+  web   = 15
+}
+
+# Тип дисков
+disk_type = "network-hdd" 

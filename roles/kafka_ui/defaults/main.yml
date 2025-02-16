@@ -1,0 +1,8 @@
+kafka_ui_version: "latest"
+kafka_ui_port: 8080
+kafka_ui_container_name: "kafka-ui"
+
+# Настройки подключения к кластеру Kafka
+kafka_clusters:
+  - name: "kafka-cluster"
+    bootstrapServers: "{% for host in groups['kafka'] %}{{ hostvars[host]['ansible_host'] }}:9093{% if not loop.last %},{% endif %}{% endfor %}" 
