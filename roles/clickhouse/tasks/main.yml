@@ -1,11 +1,12 @@
 - name: Add ClickHouse GPG key
   apt_key:
-    url: "https://packages.clickhouse.com/deb/clickhouse.key"
+    keyserver: "{{ clickhouse_repo_keyserver }}"
+    id: "{{ clickhouse_repo_key }}"
     state: present
 
 - name: Add ClickHouse repository
   apt_repository:
-    repo: "deb https://packages.clickhouse.com/deb stable main"
+    repo: "{{ clickhouse_repo }}"
     state: present
     filename: clickhouse
     update_cache: yes
@@ -28,27 +29,94 @@
     - "{{ clickhouse_data_dir }}"
     - "{{ clickhouse_log_dir }}"
 
-- name: Configure ClickHouse server
-  template:
-    src: config.xml.j2
-    dest: /etc/clickhouse-server/config.xml
-    owner: "{{ clickhouse_user }}"
-    group: "{{ clickhouse_group }}"
-    mode: '0644'
-  notify: restart clickhouse
+# - name: Configure ClickHouse server
+#   template:
+#     src: config.xml.j2
+#     dest: /etc/clickhouse-server/config.xml
+#     owner: "{{ clickhouse_user }}"
+#     group: "{{ clickhouse_group }}"
+#     mode: '0644'
+#   notify: restart clickhouse
 
-- name: Configure ClickHouse users
-  template:
-    src: users.xml.j2
-    dest: /etc/clickhouse-server/users.xml
-    owner: "{{ clickhouse_user }}"
-    group: "{{ clickhouse_group }}"
-    mode: '0644'
-  notify: restart clickhouse
+# - name: Configure ClickHouse users
+#   template:
+#     src: users.xml.j2
+#     dest: /etc/clickhouse-server/users.xml
+#     owner: "{{ clickhouse_user }}"
+#     group: "{{ clickhouse_group }}"
+#     mode: '0644'
+#   notify: restart clickhouse
 
 - name: Start and enable ClickHouse service
   systemd:
     name: clickhouse-server
     state: started
     enabled: yes
-    daemon_reload: yes 
+    daemon_reload: yes
+
+- name: Ensure correct permissions on ClickHouse config directory
+  file:
+    path: /etc/clickhouse-server
+    state: directory
+    owner: "{{ clickhouse_user }}"
+    group: "{{ clickhouse_group }}"
+    mode: '0750'
+    recurse: yes
+
+- name: Restart ClickHouse service
+  systemd:
+    name: clickhouse-server
+    state: restarted
+    daemon_reload: yes
+
+# - name: Check ClickHouse configuration
+#   command: clickhouse-server --config-file /etc/clickhouse-server/config.xml --check-config
+#   register: config_check
+#   changed_when: false
+#   failed_when: config_check.rc != 0
+
+- name: Create Kafka Engine Table
+  command: >
+    clickhouse-client -q "
+    CREATE TABLE IF NOT EXISTS kafka_table
+    (
+        message String
+    )
+    ENGINE = Kafka
+    SETTINGS kafka_broker_list = '{{ hostvars[groups['kafka'][0]]['ansible_host'] }}:9092',
+            kafka_topic_list = '{{ kafka_clickhouse_topic }}',
+            kafka_group_name = 'clickhouse_consumer',
+            kafka_format = 'JSONEachRow';"
+  register: create_table
+  changed_when: create_table.rc == 0
+  failed_when:
+    - create_table.rc != 0
+    - "'already exists' not in create_table.stderr"
+
+- name: Create Target Table
+  command: >
+    clickhouse-client -q "
+    CREATE TABLE IF NOT EXISTS message_queue
+    (
+        message String
+    )
+    ENGINE = MergeTree()
+    ORDER BY tuple();"
+  register: create_target
+  changed_when: create_target.rc == 0
+  failed_when:
+    - create_target.rc != 0
+    - "'already exists' not in create_target.stderr"
+
+- name: Create Materialized View
+  command: >
+    clickhouse-client -q "
+    CREATE MATERIALIZED VIEW IF NOT EXISTS kafka_mv
+    TO message_queue
+    AS SELECT * FROM kafka_table;"
+  register: create_mv
+  changed_when: create_mv.rc == 0
+  failed_when:
+    - create_mv.rc != 0
+    - "'already exists' not in create_mv.stderr"
+

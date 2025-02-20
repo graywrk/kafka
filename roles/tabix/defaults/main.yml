@@ -1,0 +1,4 @@
+---
+tabix_port: 8124
+tabix_user: admin
+tabix_password: admin 

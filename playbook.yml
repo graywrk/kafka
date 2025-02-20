@@ -1,9 +1,45 @@
 ---
-- name: Configure Kafka
+- name: Install Clickhouse
+  hosts: clickhouse
+  become: yes
+  roles:
+    - clickhouse
+
+- name: Install Kafka
   hosts: kafka
   become: yes
   roles:
     - kafka
+
+- name: Create Kafka topics
+  hosts: kafka
+  become: yes
+  become_user: kafka
+  vars_files:
+    - roles/kafka/defaults/main.yml
+  tasks:
+    # - name: Wait for Kafka to start
+    #   wait_for:
+    #     host: "{{ ansible_default_ipv4.address }}"
+    #     port: 9092
+    #     timeout: 60
+    - name: Wait for 30 seconds
+      pause:
+        seconds: 30
+
+    - name: Create Clickhouse topic
+      command: >
+        {{ kafka_home }}/bin/kafka-topics.sh --create 
+        --bootstrap-server {{ ansible_default_ipv4.address }}:9092 
+        --replication-factor {{ kafka_topic_replication }} 
+        --partitions {{ kafka_topic_partitions }} 
+        --topic {{ kafka_clickhouse_topic }}
+      register: topic_creation
+      changed_when: topic_creation.rc == 0
+      failed_when: 
+        - topic_creation.rc != 0 
+        - "'already exists' not in topic_creation.stderr"
+      ignore_errors: yes
 
 - name: Configure Kafka UI
   hosts: web
@@ -12,7 +48,92 @@
     - kafka_ui
 
 - name: Configure Clickhouse
-  hosts: database
+  hosts: db
   become: yes
   roles:
-    - clickhouse 
+    - clickhouse
+
+- name: Configure Clickhouse Kafka Integration
+  hosts: db
+  become: yes
+  vars_files:
+    - roles/kafka/defaults/main.yml
+    - roles/clickhouse/defaults/main.yml
+  tasks:
+    - name: Create Kafka Engine Table
+      command: >
+        clickhouse-client -q "
+        CREATE TABLE IF NOT EXISTS kafka_table
+        (
+            message String
+        )
+        ENGINE = Kafka
+        SETTINGS kafka_broker_list = '{{ hostvars[groups['kafka'][0]]['ansible_default_ipv4']['address'] }}:9092',
+                kafka_topic_list = '{{ kafka_clickhouse_topic }}',
+                kafka_group_name = 'clickhouse_consumer',
+                kafka_format = 'JSONEachRow';"
+      register: create_table
+      changed_when: create_table.rc == 0
+      failed_when:
+        - create_table.rc != 0
+        - "'already exists' not in create_table.stderr"
+
+    - name: Create Target Table
+      command: >
+        clickhouse-client -q "
+        CREATE TABLE IF NOT EXISTS message_queue
+        (
+            message String
+        )
+        ENGINE = MergeTree()
+        ORDER BY tuple();"
+      register: create_target
+      changed_when: create_target.rc == 0
+      failed_when:
+        - create_target.rc != 0
+        - "'already exists' not in create_target.stderr"
+
+    - name: Create Materialized View
+      command: >
+        clickhouse-client -q "
+        CREATE MATERIALIZED VIEW IF NOT EXISTS kafka_mv
+        TO message_queue
+        AS SELECT * FROM kafka_table;"
+      register: create_mv
+      changed_when: create_mv.rc == 0
+      failed_when:
+        - create_mv.rc != 0
+        - "'already exists' not in create_mv.stderr"
+
+- name: Configure Tabix UI
+  hosts: web
+  become: yes
+  vars_files:
+    - roles/clickhouse/defaults/main.yml
+  roles:
+    - tabix 
+
+- name: Restart Services
+  hosts: kafka
+  become: yes
+  tasks:
+    - name: Restart Kafka
+      systemd:
+        name: kafka
+        state: restarted
+        daemon_reload: yes
+
+    - name: Wait for Kafka
+      pause:
+        seconds: 30
+
+- name: Restart Kafka UI
+  hosts: web
+  become: yes
+  tasks:
+    - name: Restart Kafka UI container
+      docker_container:
+        name: kafka-ui
+        state: started
+        restart: yes
+

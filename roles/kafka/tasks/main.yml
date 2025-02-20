@@ -99,3 +99,9 @@
     state: started
     enabled: yes
     daemon_reload: yes
+
+# - name: Wait for Kafka to start
+#   wait_for:
+#     host: "{{ ansible_default_ipv4.address }}"
+#     port: 9092
+#     timeout: 60

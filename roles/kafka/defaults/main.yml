@@ -8,11 +8,21 @@ kafka_log_dir: "/var/log/kafka"
 
 # Настройки кластера
 kafka_broker_id: "{{ groups['kafka'].index(inventory_hostname) + 1 }}"
-kafka_listeners: "INTERNAL://:9092,EXTERNAL://{{ ansible_host }}:9093"
-kafka_advertised_listeners: "INTERNAL://{{ ansible_host }}:9092,EXTERNAL://{{ ansible_host }}:9093"
-kafka_listener_security_protocol_map: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
-kafka_inter_broker_listener_name: "INTERNAL"
+kafka_listeners: "PLAINTEXT://0.0.0.0:9092"
+kafka_advertised_listeners: "PLAINTEXT://{{ ansible_default_ipv4.address }}:9092"
+kafka_listener_security_protocol_map: "PLAINTEXT:PLAINTEXT"
+kafka_inter_broker_listener_name: "PLAINTEXT"
+
+# Security settings
+kafka_allow_everyone_if_no_acl_found: "true"
+kafka_authorizer_class_name: "kafka.security.authorizer.AclAuthorizer"
+kafka_super_users: "User:ANONYMOUS"
 
 # ZooKeeper настройки
-zookeeper_connect: "{% for host in groups['kafka'] %}{{ hostvars[host]['ansible_host'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}"
-zookeeper_id: "{{ groups['kafka'].index(inventory_hostname) + 1 }}" 
+zookeeper_connect: "{% for host in groups['kafka'] %}{{ hostvars[host]['ansible_default_ipv4']['address'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}"
+zookeeper_id: "{{ groups['kafka'].index(inventory_hostname) + 1 }}"
+
+# Topic configuration
+kafka_clickhouse_topic: "clickhouse"
+kafka_topic_partitions: 1
+kafka_topic_replication: 1 

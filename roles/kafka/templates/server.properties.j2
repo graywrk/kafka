@@ -1,37 +1,81 @@
-# Идентификатор брокера
+# The id of the broker
 broker.id={{ kafka_broker_id }}
 
-# Директории для данных и логов
-log.dirs={{ kafka_data_dir }}
-
-# Настройки подключения
+# The address the socket server listens on
 listeners={{ kafka_listeners }}
+
+# Hostname and port the broker will advertise to producers and consumers
 advertised.listeners={{ kafka_advertised_listeners }}
+
+# Maps listener names to security protocols
 listener.security.protocol.map={{ kafka_listener_security_protocol_map }}
+
+# The name of the listener used for inter broker communication
 inter.broker.listener.name={{ kafka_inter_broker_listener_name }}
 
-# Подключение к ZooKeeper
+# The address for ZooKeeper connection
 zookeeper.connect={{ zookeeper_connect }}
 
-# Базовые настройки
+# Directory where to store data
+log.dirs={{ kafka_data_dir }}
+
+# Default number of log partitions per topic
+num.partitions=1
+
+# Default replication factor
+default.replication.factor=1
+
+# Min ISR
+min.insync.replicas=1
+
+# Enable auto creation of topics
+auto.create.topics.enable=true
+
+# Basic Thread Pool Size
 num.network.threads=3
 num.io.threads=8
+
+# The replication factor for the group metadata internal topics
+offsets.topic.replication.factor=1
+transaction.state.log.replication.factor=1
+transaction.state.log.min.isr=1
+
+# Switch to enable topic deletion or not
+delete.topic.enable=true
+
+# Root directory for all kafka znodes
+zookeeper.chroot=/kafka
+
+# Number of threads used for log replication
+num.replica.fetchers=1
+
+# Log retention hours
+log.retention.hours=168
+
+# A size-based retention policy for logs
+log.retention.bytes=1073741824
+
+# The maximum size of a log segment file
+log.segment.bytes=1073741824
+
+# The interval at which log segments are checked to see if they can be deleted
+log.retention.check.interval.ms=300000
+
+# Настройки размера партиции
+num.recovery.threads.per.data.dir=1
+
+# Настройки удержания данных
+log.retention.check.interval.ms=300000
+
+# Базовые настройки
 socket.send.buffer.bytes=102400
 socket.receive.buffer.bytes=102400
 socket.request.max.bytes=104857600
 
-# Настройки размера партиции
-num.partitions=3
-default.replication.factor=2
-min.insync.replicas=2
-num.recovery.threads.per.data.dir=1
+# Security settings
+authorizer.class.name={{ kafka_authorizer_class_name }}
+super.users={{ kafka_super_users }}
+allow.everyone.if.no.acl.found={{ kafka_allow_everyone_if_no_acl_found }}
 
-# Настройки репликации
-offsets.topic.replication.factor=3
-transaction.state.log.replication.factor=3
-transaction.state.log.min.isr=2
-
-# Настройки удержания данных
-log.retention.hours=168
-log.segment.bytes=1073741824
-log.retention.check.interval.ms=300000 
+# Additional settings
+group.initial.rebalance.delay.ms=0 

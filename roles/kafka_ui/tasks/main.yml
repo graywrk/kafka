@@ -24,14 +24,22 @@
     state: present
     update_cache: yes
 
-- name: Run Kafka UI container
+- name: Create Kafka-UI container
   docker_container:
-    name: "{{ kafka_ui_container_name }}"
-    image: "provectuslabs/kafka-ui:{{ kafka_ui_version }}"
+    name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
     state: started
-    restart_policy: always
+    restart_policy: unless-stopped
+    network_mode: host
     ports:
-      - "{{ kafka_ui_port }}:8080"
+      - "8080:8080"
     env:
-      KAFKA_CLUSTERS_0_NAME: "{{ kafka_clusters[0].name }}"
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "{{ kafka_clusters[0].bootstrapServers }}" 
+      KAFKA_CLUSTERS_0_NAME: "local"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "{{ hostvars[groups['kafka'][0]]['ansible_default_ipv4']['address'] }}:9092"
+      KAFKA_CLUSTERS_0_ZOOKEEPER: "{{ hostvars[groups['kafka'][0]]['ansible_default_ipv4']['address'] }}:2181"
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: "PLAINTEXT"
+      KAFKA_CLUSTERS_0_PROPERTIES_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_CLUSTERS_0_PROPERTIES_CLIENT_ID: "kafka-ui"
+      KAFKA_CLUSTERS_0_PROPERTIES_REQUEST_TIMEOUT_MS: "30000"
+      KAFKA_CLUSTERS_0_PROPERTIES_RETRY_BACKOFF_MS: "500"
+      KAFKA_CLUSTERS_0_READINESS_TIMEOUT: "20"

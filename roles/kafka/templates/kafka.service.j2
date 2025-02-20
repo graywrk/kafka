@@ -7,7 +7,8 @@ After=zookeeper.service
 Type=simple
 User={{ kafka_user }}
 Group={{ kafka_group }}
-Environment="KAFKA_HEAP_OPTS=-Xmx1G -Xms1G"
+Environment="KAFKA_HEAP_OPTS=-Xmx512M -Xms256M"
+Environment="KAFKA_JVM_PERFORMANCE_OPTS=-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -Djava.awt.headless=true"
 ExecStart={{ kafka_home }}/bin/kafka-server-start.sh {{ kafka_home }}/config/server.properties
 ExecStop={{ kafka_home }}/bin/kafka-server-stop.sh
 Restart=on-failure

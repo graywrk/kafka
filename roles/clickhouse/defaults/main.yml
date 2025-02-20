@@ -17,4 +17,17 @@ clickhouse_log_dir: "/var/log/clickhouse-server"
 # Сетевые настройки
 clickhouse_http_port: 8123
 clickhouse_tcp_port: 9000
-clickhouse_host: "0.0.0.0" 
+clickhouse_host: "{{ ansible_default_ipv4.address }}"
+
+# Репозитории
+clickhouse_repo: "deb https://packages.clickhouse.com/deb stable main"
+clickhouse_repo_keyserver: keyserver.ubuntu.com
+clickhouse_repo_key: 8919F6BD2B48D754
+
+# Kafka integration
+kafka_broker_host: "{{ hostvars[groups['kafka'][0]]['ansible_default_ipv4']['address'] }}"
+kafka_broker_port: 9092
+kafka_clickhouse_topic: "clickhouse"
+kafka_topic_partitions: 1
+kafka_topic_replication: 1
+kafka_topic: "{{ kafka_clickhouse_topic }}" 
